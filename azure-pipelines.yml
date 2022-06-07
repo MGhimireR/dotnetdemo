@@ -64,7 +64,14 @@ stages:
           steps:
            - task: Bash@3
              inputs:
+              targetType: 'inline'
               script: 'echo $(Build.ArtifactStagingDirectory)'
+
+           - task: Bash@3
+             displayName: '2nd Bash'
+             inputs:
+              targetType: 'inline'
+              script: 'echo $(Agent.BuildDirectory)'
 
            - task: AzureRmWebAppDeployment@4
              displayName: 'Deploy .NET Code to Azure App Service '
