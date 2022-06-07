@@ -62,6 +62,10 @@ stages:
        runOnce:     
         deploy:
           steps:
+           - task: Bash@3
+             inputs:
+              script: 'echo $(Build.ArtifactStagingDirectory)'
+
            - task: AzureRmWebAppDeployment@4
              displayName: 'Deploy .NET Code to Azure App Service '
              inputs:
@@ -69,5 +73,5 @@ stages:
               azureSubscription: 'Azure'
               appType: 'webApp'
               WebAppName: $(appName)
-              packageForLinux: '$(Pipeline.Workspace)/$(artifaceName)/$(buildConfiguration)/*.zip'
+              packageForLinux: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
 
