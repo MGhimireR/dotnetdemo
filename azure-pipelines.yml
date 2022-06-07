@@ -11,7 +11,35 @@ pool:
 
 variables:
   buildConfiguration: 'Release'
-
+  
 steps:
 - script: dotnet build --configuration $(buildConfiguration)
   displayName: 'dotnet build $(buildConfiguration)'
+  
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'publish'
+    publishWebProjects: true
+    arguments: '--configuration $(buildConfiguration)'
+    zipAfterPublish: True
+
+# - task: PublishBuildArtifacts@1
+#   inputs:
+#     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+#     ArtifactName: 'drop'
+#     publishLocation: 'Container'
+
+- task: PublishPipelineArtifact@1
+  inputs:
+    targetPath: '$(Pipeline.Workspace)'
+    artifact: 'drop'
+    publishLocation: 'pipeline'
+
+#Publish it to the Azure App Service
+- task: AzureWebApp@1
+  inputs:
+    appType: webAppLinux
+    azureSubscription: $(azureSPNName) #this is the name of the SPN
+    appName: $(azureAppServiceName) #App Service's unique name
+    package: $(Build.ArtifactStagingDirectory)/**/*.zip
+
