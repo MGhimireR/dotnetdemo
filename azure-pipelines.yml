@@ -14,22 +14,26 @@ variables:
   azureSPNName: 'Azure' 
   azureAppServiceName: 'bermtecdev'
 
-steps:
-- script: dotnet build --configuration $(buildConfiguration)
-  displayName: 'dotnet build $(buildConfiguration)'
-  
-- task: DotNetCoreCLI@2
-  inputs:
-    command: 'publish'
-    publishWebProjects: true
-    arguments: '--configuration $(buildConfiguration)'
-    zipAfterPublish: True
+stages:
+- stage: 'Build'
+  jobs:
+  - job: ''
+    steps:
+    - script: dotnet build --configuration $(buildConfiguration)
+      displayName: 'dotnet build $(buildConfiguration)'
+      
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'publish'
+        publishWebProjects: true
+        arguments: '--configuration $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)/$(buildConfiguration)'
+        zipAfterPublish: true
 
-- task: PublishBuildArtifacts@1
-  inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    ArtifactName: 'drop'
-    publishLocation: 'Container'
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'drop'
+        publishLocation: 'Container'
 
 # - task: PublishPipelineArtifact@1
 #   inputs:
@@ -38,10 +42,32 @@ steps:
 #     publishLocation: 'pipeline'
 
 #Publish it to the Azure App Service
-- task: AzureWebApp@1
-  inputs:
-    appType: webAppLinux
-    azureSubscription: $(azureSPNName) #this is the name of the SPN
-    appName: $(azureAppServiceName) #App Service's unique name
-    package: $(Build.ArtifactStagingDirectory)/**/*.zip
+# - task: AzureWebApp@1
+#   inputs:
+#     appType: webAppLinux
+#     azureSubscription: $(azureSPNName) #this is the name of the SPN
+#     appName: $(azureAppServiceName) #App Service's unique name
+#     package: $(Build.ArtifactStagingDirectory)/**/*.zip
+
+- stage: 'DeployDev'
+  displayName: 'Deploy to Dev'
+  variables: 
+    appName: 'bermtecdev'
+  jobs:
+  - deployment: 'Dev'
+    pool:
+      name: test
+    environment: 'Dev'
+    strategy: 
+       runOnce:     
+        deploy:
+          steps:
+           - task: AzureRmWebAppDeployment@4
+             displayName: 'Deploy .NET Code to Azure App Service '
+             inputs:
+              ConnectionType: 'AzureRM'
+              azureSubscription: 'Azure'
+              appType: 'webApp'
+              WebAppName: $(appName)
+              packageForLinux: '$(Pipeline.Workspace)/$(artifaceName)/$(buildConfiguration)/*.zip'
 
