@@ -7,7 +7,7 @@ trigger:
 - '*'
 
 pool:
-  name: batch6
+  name: Batch26
 
 variables:
   buildConfiguration: 'Release'
