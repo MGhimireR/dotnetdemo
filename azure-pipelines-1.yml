@@ -1,33 +1,79 @@
-# .NET Desktop
-# Build and run tests for .NET Desktop or Windows classic desktop solutions.
-# Add steps that publish symbols, save build artifacts, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/apps/windows/dot-net
+# ASP.NET Core
+# Build and test ASP.NET Core projects targeting .NET Core.
+# Add steps that run tests, create a NuGet package, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
 
 trigger:
-- develop
+- '*'
 
 pool:
   name: Batch26
 
 variables:
-  solution: '**/*.sln'
-  buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
+  azureSPNName: 'Azure' 
+  azureAppServiceName: 'bermtecdev'
+  artifactName: drop
 
-steps:
-- task: NuGetToolInstaller@1
+stages:
+- stage: 'Build'
+  jobs:
+  - job: ''
+    steps:
+    - script: dotnet build --configuration $(buildConfiguration)
+      displayName: 'dotnet build $(buildConfiguration)'
+      
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'publish'
+        publishWebProjects: true
+        arguments: '--configuration $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)/$(buildConfiguration)'
+        zipAfterPublish: true
 
-- task: NuGetCommand@2
-  inputs:
-    restoreSolution: '$(solution)'
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: $(artifactName)
+        publishLocation: 'Container'
 
-- task: VSBuild@1
-  inputs:
-    solution: '$(solution)'
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
+# - task: PublishPipelineArtifact@1
+#   inputs:
+#     targetPath: '$(Pipeline.Workspace)'
+#     artifact: 'drop'
+#     publishLocation: 'pipeline'
 
-- task: VSTest@2
-  inputs:
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
+#Publish it to the Azure App Service
+# - task: AzureWebApp@1
+#   inputs:
+#     appType: webAppLinux
+#     azureSubscription: $(azureSPNName) #this is the name of the SPN
+#     appName: $(azureAppServiceName) #App Service's unique name
+#     package: $(Build.ArtifactStagingDirectory)/**/*.zip
+
+# - stage: 'DeployDev'
+#   displayName: 'Deploy to Dev'
+#   variables: 
+#     appName: 'bermtecdev'
+#   jobs:
+#   - deployment: 'Dev'
+#     pool:
+#       name: test
+#     environment: 'Dev'
+#     strategy: 
+#        runOnce:     
+#         deploy:
+#           steps:
+#            - task: AzureRmWebAppDeployment@4
+#              displayName: 'Deploy .NET Code to Azure App Service '
+#              inputs:
+#               ConnectionType: 'AzureRM'
+#               azureSubscription: 'Azure'
+#               appType: 'webApp'
+#               WebAppName: $(appName)
+#               packageForLinux: '$(Agent.BuildDirectory)/$(artifactName)/$(buildConfiguration)/*.zip'
+
+          #  - task: Bash@3
+          #    displayName: '2nd Bash'
+          #    inputs:
+          #       targetType: 'inline'
+          #       script: 'echo $(Agent.BuildDirectory)'
