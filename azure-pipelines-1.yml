@@ -23,6 +23,13 @@ stages:
     - script: dotnet build --configuration $(buildConfiguration)
       displayName: 'dotnet build $(buildConfiguration)'
       
+    - task: UseDotNet@2
+      displayName: 'Use .NET Core sdk'
+      inputs:
+        packageType: sdk
+        version: 5.0.x
+        installationPath: $(Agent.ToolsDirectory)/dotnet
+
     - task: DotNetCoreCLI@2
       inputs:
         command: 'publish'
