@@ -7,7 +7,7 @@ trigger:
 - develop
 
 pool:
-  vmImage: 'windows-latest'
+  name: batch26
 
 variables:
   solution: '**/*.sln'
